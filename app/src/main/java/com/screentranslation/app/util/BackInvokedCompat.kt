@@ -41,12 +41,29 @@ object BackInvokedCompat {
         return runCatching {
             val callbackClass = Class.forName("android.window.OnBackInvokedCallback")
             val dispatcherClass = Class.forName("android.window.OnBackInvokedDispatcher")
+            // The framework stores callbacks in a HashMap and calls hashCode()
+            // on registration (WindowOnBackInvokedDispatcher), so the handler
+            // must answer the Object methods explicitly. Returning null for
+            // hashCode() makes Proxy fail to unbox null to int and crashes
+            // with "Expected to unbox a 'int' primitive type but was returned
+            // null" as soon as the window attaches and the dispatcher
+            // transfers the callback (Pixel 8 / Android 14, 2026-10-15).
             val callback = Proxy.newProxyInstance(
                 callbackClass.classLoader,
                 arrayOf(callbackClass),
-            ) { _, method, _ ->
-                if (method.name == "onBackInvoked") onBack()
-                if (method.returnType == Boolean::class.javaPrimitiveType) false else null
+            ) { proxy, method, args ->
+                when (method.name) {
+                    "onBackInvoked" -> {
+                        onBack()
+                        null
+                    }
+                    "hashCode" -> System.identityHashCode(proxy)
+                    "equals" -> proxy === args?.firstOrNull()
+                    "toString" ->
+                        "BackInvokedCompatCallback@${System.identityHashCode(proxy).toString(16)}"
+                    else ->
+                        if (method.returnType == Boolean::class.javaPrimitiveType) false else null
+                }
             }
             val priority = dispatcherClass.getField("PRIORITY_OVERLAY").getInt(null)
             dispatcherClass
