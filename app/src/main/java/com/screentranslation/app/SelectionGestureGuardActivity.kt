@@ -3,14 +3,14 @@ package com.screentranslation.app
 import android.content.Context
 import android.content.Intent
 import android.graphics.Rect
+import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.View
 import android.view.WindowInsets
 import android.view.WindowManager
-import android.window.OnBackInvokedCallback
-import android.window.OnBackInvokedDispatcher
 import androidx.activity.ComponentActivity
+import com.screentranslation.app.util.BackInvokedCompat
 import java.lang.ref.WeakReference
 
 /**
@@ -24,9 +24,7 @@ import java.lang.ref.WeakReference
  * back gestures are consumed here instead of navigating the target app.
  */
 class SelectionGestureGuardActivity : ComponentActivity() {
-    private val backCallback = OnBackInvokedCallback {
-        requestSelectionCancel()
-    }
+    private var backCallbackUnregister: (() -> Unit)? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,10 +37,11 @@ class SelectionGestureGuardActivity : ComponentActivity() {
         window.addFlags(selectionGestureGuardWindowFlags())
         window.setDimAmount(0f)
         enterImmersiveSelectionMode()
-        onBackInvokedDispatcher.registerOnBackInvokedCallback(
-            OnBackInvokedDispatcher.PRIORITY_OVERLAY,
-            backCallback,
-        )
+        // Predictive back (API 33+). On API 31/32 this returns null and the
+        // KEYCODE_BACK handling in onKeyDown/onKeyUp below is the fallback.
+        backCallbackUnregister = BackInvokedCompat.register(this) {
+            requestSelectionCancel()
+        }
     }
 
     override fun onResume() {
@@ -60,15 +59,32 @@ class SelectionGestureGuardActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        runCatching {
-            onBackInvokedDispatcher.unregisterOnBackInvokedCallback(backCallback)
-        }
+        backCallbackUnregister?.invoke()
+        backCallbackUnregister = null
         if (activeActivity?.get() === this) activeActivity = null
         super.onDestroy()
     }
 
     private fun finishWithoutAnimation() {
         finishAndRemoveTask()
+        finishTransitionCompat()
+    }
+
+    /**
+     * [overrideActivityTransition] arrived in API 34. The call lives in its own
+     * method so this method's bytecode never references it on API 31-33.
+     */
+    private fun finishTransitionCompat() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            finishTransition34()
+        } else {
+            @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
+        }
+    }
+
+    @androidx.annotation.RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    private fun finishTransition34() {
         overrideActivityTransition(OVERRIDE_TRANSITION_CLOSE, 0, 0)
     }
 

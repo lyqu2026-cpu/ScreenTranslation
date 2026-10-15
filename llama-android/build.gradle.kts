@@ -8,7 +8,11 @@ android {
     ndkVersion = "29.0.14206865"
 
     defaultConfig {
-        minSdk = 35
+        // Android 12 (API 31) floor, matching the app module. This module's own
+        // JNI uses only JNI + android/log.h; the 35 here previously mirrored
+        // the app's Android 16 baseline, not a native requirement. The pinned
+        // llama.cpp submodule is built as-is and is not upgraded by this change.
+        minSdk = 31
         ndk {
             abiFilters += "arm64-v8a"
         }

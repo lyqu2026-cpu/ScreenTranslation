@@ -28,13 +28,12 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
-import android.window.OnBackInvokedCallback
-import android.window.OnBackInvokedDispatcher
 import com.google.android.material.button.MaterialButton
 import androidx.core.view.ViewCompat
 import com.screentranslation.app.R
 import com.screentranslation.app.RegionPresetActivity
 import com.screentranslation.app.SelectionGestureGuardActivity
+import com.screentranslation.app.util.BackInvokedCompat
 
 /**
  * Keeps the translation panel visible in user-initiated screenshots and
@@ -175,10 +174,7 @@ class OverlayController(
     private var dragStartWindowX = 0
     private var dragStartWindowY = 0
     private var panelDragging = false
-    private var registeredBackDispatcher: OnBackInvokedDispatcher? = null
-    private val selectionBackCallback = OnBackInvokedCallback {
-        handleSelectionExit(SelectionExitTrigger.SYSTEM_BACK)
-    }
+    private var selectionBackUnregister: (() -> Unit)? = null
 
     val isShowing: Boolean
         get() = rootView?.isAttachedToWindow == true
@@ -955,19 +951,17 @@ class OverlayController(
     }
 
     private fun registerSelectionBackCallback(root: View) {
-        if (!selectionModeActive || registeredBackDispatcher != null) return
-        root.findOnBackInvokedDispatcher()?.let { dispatcher ->
-            dispatcher.registerOnBackInvokedCallback(
-                OnBackInvokedDispatcher.PRIORITY_OVERLAY,
-                selectionBackCallback,
-            )
-            registeredBackDispatcher = dispatcher
+        if (!selectionModeActive || selectionBackUnregister != null) return
+        // Predictive back (API 33+). On API 31/32 this returns null and the
+        // root view's OnKeyListener KEYCODE_BACK handling is the fallback.
+        selectionBackUnregister = BackInvokedCompat.register(root) {
+            handleSelectionExit(SelectionExitTrigger.SYSTEM_BACK)
         }
     }
 
     private fun unregisterSelectionBackCallback() {
-        registeredBackDispatcher?.unregisterOnBackInvokedCallback(selectionBackCallback)
-        registeredBackDispatcher = null
+        selectionBackUnregister?.invoke()
+        selectionBackUnregister = null
     }
 
     private fun handleSelectionExit(trigger: SelectionExitTrigger) {

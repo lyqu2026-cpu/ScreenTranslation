@@ -20,6 +20,7 @@ import android.hardware.display.VirtualDisplay
 import android.media.ImageReader
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
+import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.IBinder
@@ -31,6 +32,8 @@ import android.text.format.Formatter
 import android.util.Log
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.annotation.RequiresApi
+import androidx.core.content.ContextCompat
 import com.screentranslation.app.MainActivity
 import com.screentranslation.app.R
 import com.screentranslation.app.model.CaptureMode
@@ -167,10 +170,7 @@ class ScreenTranslationService : Service() {
         // latter prevents vendor parcel handling from turning a valid consent
         // callback into an unobservable startup failure.
         val inProcessRequest = pendingStartRequest.getAndSet(null)
-        val projectionData = inProcessRequest?.projectionData ?: intent.getParcelableExtra(
-            EXTRA_PROJECTION_DATA,
-            Intent::class.java,
-        )
+        val projectionData = inProcessRequest?.projectionData ?: getProjectionDataExtra(intent)
         val resultCode = inProcessRequest?.resultCode ?: intent.getIntExtra(
             EXTRA_PROJECTION_RESULT_CODE,
             Activity.RESULT_CANCELED,
@@ -241,6 +241,27 @@ class ScreenTranslationService : Service() {
 
         return START_NOT_STICKY
     }
+
+    /**
+     * The typed `getParcelableExtra(name, Class)` overload arrived in API 33.
+     * On API 31/32 the deprecated untyped overload returns the same `Intent`;
+     * it lives in this branch only, and the typed call is isolated in
+     * [getProjectionDataExtra33] so this method never references the new
+     * overload on older releases.
+     */
+    private fun getProjectionDataExtra(intent: Intent?): Intent? {
+        if (intent == null) return null
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            getProjectionDataExtra33(intent)
+        } else {
+            @Suppress("DEPRECATION")
+            intent.getParcelableExtra(EXTRA_PROJECTION_DATA)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    private fun getProjectionDataExtra33(intent: Intent): Intent? =
+        intent.getParcelableExtra(EXTRA_PROJECTION_DATA, Intent::class.java)
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
@@ -607,12 +628,17 @@ class ScreenTranslationService : Service() {
                 refreshProcessorState()
             }
         }
-        registerReceiver(
+        // Explicitly non-exported: targeting API 34 requires an export flag for
+        // dynamic receivers. ContextCompat backports the flag to API 31/32,
+        // where it degrades to the plain two-arg registration.
+        ContextCompat.registerReceiver(
+            this,
             receiver,
             IntentFilter().apply {
                 addAction(Intent.ACTION_SCREEN_OFF)
                 addAction(Intent.ACTION_SCREEN_ON)
             },
+            ContextCompat.RECEIVER_NOT_EXPORTED,
         )
         screenReceiver = receiver
     }

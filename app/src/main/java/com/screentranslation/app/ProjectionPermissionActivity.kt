@@ -4,11 +4,13 @@ import android.app.Activity
 import android.content.Intent
 import android.media.projection.MediaProjectionConfig
 import android.media.projection.MediaProjectionManager
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.screentranslation.app.prefs.AppPreferences
 import com.screentranslation.app.model.preparation.ModelPreparationCoordinator
@@ -67,9 +69,7 @@ class ProjectionPermissionActivity : ComponentActivity() {
         projectionRequestLaunched = true
         CaptureShortcutNotification.cancel(this)
         runCatching {
-            projectionManager.createScreenCaptureIntent(
-                MediaProjectionConfig.createConfigForDefaultDisplay(),
-            )
+            createScreenCaptureIntentCompat()
         }.fold(
             onSuccess = projectionLauncher::launch,
             onFailure = {
@@ -84,6 +84,29 @@ class ProjectionPermissionActivity : ComponentActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putBoolean(KEY_REQUEST_LAUNCHED, projectionRequestLaunched)
         super.onSaveInstanceState(outState)
+    }
+
+    /**
+     * `createScreenCaptureIntent(MediaProjectionConfig)` and
+     * `MediaProjectionConfig.createConfigForDefaultDisplay()` arrived in API 34.
+     * On API 31-33 the no-arg intent is the only form, and it requests the same
+     * default-display capture. The API 34 call lives in its own method so this
+     * method's bytecode never references the new class on older releases.
+     */
+    private fun createScreenCaptureIntentCompat(): Intent {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            createScreenCaptureIntent34()
+        } else {
+            @Suppress("DEPRECATION")
+            projectionManager.createScreenCaptureIntent()
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    private fun createScreenCaptureIntent34(): Intent {
+        return projectionManager.createScreenCaptureIntent(
+            MediaProjectionConfig.createConfigForDefaultDisplay(),
+        )
     }
 
     private fun actionIsInvalid(): Boolean = intent?.action != ACTION_QUICK_START

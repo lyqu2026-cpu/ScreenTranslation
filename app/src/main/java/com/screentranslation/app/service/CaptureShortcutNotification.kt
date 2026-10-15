@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.drawable.Icon
+import android.os.Build
 import androidx.core.content.ContextCompat
 import com.screentranslation.app.ProjectionPermissionActivity
 import com.screentranslation.app.R
@@ -45,10 +46,17 @@ object CaptureShortcutNotification {
         startupFailureMessage: String? = null,
     ) {
         val appContext = context.applicationContext
-        val permissionGranted = ContextCompat.checkSelfPermission(
-            appContext,
-            Manifest.permission.POST_NOTIFICATIONS,
-        ) == PackageManager.PERMISSION_GRANTED
+        // Same API 33 gate as MainActivity.hasNotificationPermission():
+        // below 33 POST_NOTIFICATIONS does not exist and notifications are
+        // enabled by default; checkSelfPermission would wrongly report DENIED.
+        val permissionGranted = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            true
+        } else {
+            ContextCompat.checkSelfPermission(
+                appContext,
+                Manifest.permission.POST_NOTIFICATIONS,
+            ) == PackageManager.PERMISSION_GRANTED
+        }
         if (!shouldShowCaptureShortcut(
                 permissionGranted,
                 ScreenTranslationService.isRunning,

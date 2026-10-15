@@ -200,14 +200,25 @@ val releaseSigningConfigured = releaseSigningRequested && missingReleaseSigningK
 android {
     namespace = "com.screentranslation.app"
     // androidx.core 1.19.0+ requires compiling against API 37 or newer.
-    // targetSdk stays at 36: this changes what APIs are compilable, not runtime behaviour.
+    // compileSdk stays at 37 so newer APIs remain compilable behind
+    // SDK_INT guards; it does not raise the runtime floor. See ANDROID_COMPAT.md.
     compileSdk = 37
     buildToolsVersion = "37.0.0"
 
     defaultConfig {
         applicationId = "com.screentranslation.app"
-        minSdk = 36
-        targetSdk = 36
+        // Android 12 (API 31) floor: FLAG_IMMUTABLE, Notification
+        // setForegroundServiceBehavior and dataExtractionRules all arrived in
+        // API 31, so 31 is the lowest level the code supports without further
+        // branching. All API 33/34-only calls are SDK-guarded (see
+        // ANDROID_COMPAT.md).
+        minSdk = 31
+        // Target Android 14 (API 34): keeps the Android 14 foreground-service
+        // type + POST_NOTIFICATIONS behaviour the app was written for, while
+        // avoiding the Android 15+ (targetSdk 35+) forced edge-to-edge and
+        // 16 KiB page-size enforcement. Play Store distribution would need
+        // targetSdk 35+ again; this branch ships via GitHub Releases.
+        targetSdk = 34
         versionCode = 12
         versionName = "2.5.0"
         buildConfigField("boolean", "BERGAMOT_LITE", "false")
@@ -607,7 +618,7 @@ fun registerEditionSbom(edition: String) = tasks.register("generate${edition.rep
                 ),
                 "properties" to listOf(
                     mapOf("name" to "screentranslation:edition", "value" to edition),
-                    mapOf("name" to "screentranslation:targetSdk", "value" to "36"),
+                    mapOf("name" to "screentranslation:targetSdk", "value" to "34"),
                     mapOf("name" to "screentranslation:releaseAbi", "value" to "arm64-v8a"),
                 ),
             ),

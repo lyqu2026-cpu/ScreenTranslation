@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
+import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.os.SystemClock
@@ -998,6 +999,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun requestNotificationPermission() {
+        // POST_NOTIFICATIONS is a runtime permission only on API 33+. Below 33
+        // there is nothing to request: notifications are enabled by default
+        // and requesting the unknown permission would be instantly denied.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            refreshPermissionState()
+            return
+        }
         if (!hasNotificationPermission()) {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else {
@@ -1503,6 +1511,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun hasNotificationPermission(): Boolean {
+        // POST_NOTIFICATIONS does not exist below API 33: checkSelfPermission
+        // would report DENIED for the unknown permission and wedge the home
+        // readiness flow on "request notification". Below 33 notifications
+        // are enabled by default (the user can still disable them in Settings).
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
         return ContextCompat.checkSelfPermission(
             this,
             Manifest.permission.POST_NOTIFICATIONS,
