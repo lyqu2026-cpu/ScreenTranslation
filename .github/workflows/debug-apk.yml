@@ -50,6 +50,11 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4.0.1
+        with:
+          # setup-android defaults to `tools platform-tools`; the `tools`
+          # package was removed from the SDK repository and makes
+          # sdkmanager fail. Upstream ci.yml/release.yml pass the same.
+          packages: platform-tools
 
       - name: Install Android SDK packages
         shell: bash
