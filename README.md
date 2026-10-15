@@ -7,10 +7,9 @@
 
 ![Apple、MIUIX 与 Material 3 静态设计预览](docs/assets/ui-style-comparison.png)
 
-面向 **Android 16（API 36）/ 小米 15 Pro / HyperOS** 的实时识屏翻译原生应用。用户在前台主动启动一次任务后，应用通过 Android 的屏幕共享授权读取画面；默认只裁剪用户框选区域，Experimental 模式则对全屏变化分块增量识别。在本机完成 OCR 后，应用按所选 edition 进行端侧或在线翻译并用悬浮层显示结果。
+面向 **Android 12+（API 31+）/ 小米 15 Pro / HyperOS** 的实时识屏翻译原生应用。用户在前台主动启动一次任务后，应用通过 Android 的屏幕共享授权读取画面；默认只裁剪用户框选区域，Experimental 模式则对全屏变化分块增量识别。在本机完成 OCR 后，应用按所选 edition 进行端侧或在线翻译并用悬浮层显示结果。Android 16 仍是真机验收基线，12+ 兼容说明见 [`ANDROID_COMPAT.md`](ANDROID_COMPAT.md)。
 
-> 项目状态：`v2.5.0`，面向已验收的单一设备/ROM 基线。运行基线为 Android 16 / API 36，`minSdk` 与
-> `targetSdk` 为 36，`compileSdk` 为 37。源代码采用
+> 项目状态：`v2.5.0`，面向已验收的单一设备/ROM 基线。运行基线为 Android 16 / API 36，`minSdk` 为 31（Android 12），`targetSdk` 为 34（Android 14），`compileSdk` 为 37。源代码采用
 > [Apache License 2.0](LICENSE)，各第三方组件仍受自身条款约束。
 
 ## 我该安装哪个 APK？
@@ -425,7 +424,7 @@ Windows 将 `./gradlew` 替换为 `.\gradlew.bat`。
 
 ## 已知边界
 
-- 当前只适配 Android 16，不保证低版本 Android 或其他厂商 ROM。
+- 支持 Android 12+（`minSdk` 31），`targetSdk` 34；Android 16 仍是真机验收基线，全屏增量覆盖在 12/13 上尚未真机验证。兼容性矩阵见 [`ANDROID_COMPAT.md`](ANDROID_COMPAT.md)。
 - Release APK 只打包 `arm64-v8a`，用于小米 15 Pro 真机；x86_64 模拟器使用隔离的
   `onlineContributor`，该变体不改变任何 Release edition。
 - PP-OCRv6 使用一套多语言识别模型；当前 UI 仅开放已列出的源语言，混合文字、

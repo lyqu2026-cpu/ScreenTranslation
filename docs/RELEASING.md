@@ -142,7 +142,7 @@ promotion job 采用 fail-closed 顺序：
    promotion 冻结正文 SHA-256 并在公开前再次核对；
 5. 下载 Artifact ZIP 并核对 GitHub digest，要求 ZIP entry 精确等于预期十二个平面文件，
    拒绝额外/缺失/嵌套路径和符号链接，随后执行 `sha256sum -c SHA256SUMS`；
-6. 重新核验三 APK 的包名、版本、targetSdk 36、应用标签、非 debuggable、仅 ARM64、
+6. 重新核验三 APK 的包名、版本、targetSdk 34、应用标签、非 debuggable、仅 ARM64、
    v2 signer、16 KiB 对齐、PP-OCRv6/ONNX Runtime、后端隔离与零内置翻译权重；核验
    三 AAB 的 JAR 签名证书同样匹配固定 release 证书和 edition 许可；
 7. 核对第三方许可 42 项 SHA-256、根 LICENSE，以及证据评论里的三 APK SHA-256；

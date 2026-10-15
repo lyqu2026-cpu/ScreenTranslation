@@ -5,6 +5,20 @@
 
 ## [Unreleased]
 
+### Added
+
+- 新增 `ANDROID_COMPAT.md`：Android 12+ 兼容性矩阵，记录每个 API 降级点、低版本 fallback 行为与低版本上尚未真机验证的功能。
+
+### Changed
+
+- 运行下限从 Android 16（`minSdk` / `targetSdk` 36）降到 Android 12（`minSdk` 31），`targetSdk` 34（Android 14），`compileSdk` 保持 37；`:llama-android` 的 `minSdk` 从 35 降到 31。
+- API 33/34 专属调用全部改为运行时分支 + 低版本 fallback：`MediaProjectionConfig`（34）→ 无参 `createScreenCaptureIntent()`；预测返回回调（33）→ 反射注册 + `KEYCODE_BACK` 兜底；`overrideActivityTransition`（34）→ `overridePendingTransition`；带 Class 的 `getParcelableExtra`（33）→ 无参重载；`POST_NOTIFICATIONS`（33）→ 33 以下视为已授权；动态广播接收器改用显式 `RECEIVER_NOT_EXPORTED`。
+- README / 发布核验清单中的 Android 版本声明同步更新；Android 16 仍是真机验收基线，全屏增量覆盖在 Android 12/13 上尚未真机验证。
+
+### Verification
+
+- 本分支在无 JDK / Android SDK 的 VM 内未完成 Gradle 编译（见 `ANDROID_COMPAT.md` 验证命令）；发版前必须在有 Android Studio 的机器上跑通 `assembleLiteDebug` / `assembleFullDebug`、三 edition 单元测试与 Release lint，并在 Android 12/13 真机或模拟器上验收。
+
 ## [2.5.0] - 2026-08-28
 
 ### Added

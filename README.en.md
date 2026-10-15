@@ -8,13 +8,15 @@
 
 ![Static Apple, MIUIX, and Material 3 design preview](docs/assets/ui-style-comparison.png)
 
-ScreenTranslation is a native screen OCR and translation app currently targeted at
-**Android 16 (API 36), Xiaomi 15 Pro, and HyperOS**. A user explicitly starts each
+ScreenTranslation is a native screen OCR and translation app for
+**Android 12+ (API 31+), Xiaomi 15 Pro, and HyperOS**. A user explicitly starts each
 session and approves Android's `MediaProjection` prompt. Screenshots are processed in
 memory by PP-OCRv6-small; translation is provided by one of three isolated editions.
+Android 16 remains the on-device acceptance baseline; see
+[`ANDROID_COMPAT.md`](ANDROID_COMPAT.md) for the Android 12+ compatibility matrix.
 
 > Project status: `v2.5.0`, for the accepted single device/ROM baseline.
-> `minSdk` and `targetSdk` are 36, `compileSdk` is
+> `minSdk` is 31 (Android 12), `targetSdk` is 34 (Android 14), `compileSdk` is
 > 37, and release APKs are currently ARM64-only. Source code is Apache-2.0; bundled and
 > downloaded third-party components retain their own licenses.
 
